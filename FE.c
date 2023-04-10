@@ -32,6 +32,9 @@ int main(){
 
     double xc[i],yc[i];// XC(I)－节点的 X 轴的坐标， YC(I)－节点的 Y 轴的坐标
     int nel[ne][3];//NEL(N,I) －组成第 N 个三角形单元的第 I 节点的编号（ I=1,2,3）
+    /*输入材料的杨氏模量 EM，波松比 PR，平板厚度 TH，节点坐标 XC(I)，YC(I)和组成单元的节点 NEL(N,I)
+组成单元的节点的编号都按逆时针顺序输入*/
+    
     fscanf(fpi,"%lg\n%lg\n%lg\n",&em,&pr,&th);
     for(int k=0;k<nn;k++){
         fscanf(fpi,"%lg",&xc[k]);
@@ -39,7 +42,7 @@ int main(){
     for(int k=0;k<nn;k++){
         fscanf(fpi,"%lg",&yc[k]);
     }
-
+//输出材料性质和计算模型拓扑数据便于检查时对照
     fprintf(fpo,"\n材料常数为：%g\t泊松比为：%g\t厚度为：%g\n",em,pr,th);
     for(int k=0;k<nn;k++){
         fprintf(fpo,"\n节点%d坐标为:X=%fY=%f\n",k+1,xc[k],yc[k]);
@@ -48,6 +51,11 @@ int main(){
         fscanf(fpi,"%d%d%d%d",&n,&nel[k][0],&nel[k][1],&nel[k][2]);
         fprintf(fpo,"\n单元号码为：%d\t组成单元的节点号码为:%d\t%d\t%d\n",n,nel[k][0],nel[k][1],nel[k][2]);
     }
+
+    /*计算最大半带宽， B=MAXe(De+1)*F
+! De 是一个单元各节编点号之差的最大值， F 是一个节点的自由度数*/
+    inbw=0;
+    nbw=0;
     fclose(fpi);
     fclose(fpo);
    return(0);
