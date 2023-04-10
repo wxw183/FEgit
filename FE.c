@@ -54,11 +54,135 @@ int main(){
 
     /*计算最大半带宽， B=MAXe(De+1)*F
 ! De 是一个单元各节编点号之差的最大值， F 是一个节点的自由度数*/
-    inbw=0;
+    int inbw=0;
     nbw=0;
+    int i,j,k,m,l,nb;
+    for(k=0;k<ne;k++){
+        for(i=0;i<3;i++)ns[i]=nel[k][i];
+        for(i=0;i<2;i++){
+            for(j=i+1;j<3;j++){
+                nb=abs(ns[i]-ns[j]);
+                if(nb<=nbw)continue;
+                inbw=k;
+                nbw=nb;
+            }
+        }
+
+    }
+    nbw=(nbw+1)*2;
+    jgf=np;
+    jgsm=jgf+np;
+    jend=jgsm+np*nbw;
+    int jl=jend-jgf;
+    for(i=0;i<jend;i++)a[i]=0.0;
+
+    //生成材料特性矩阵d
+    double r=em/(1.0-pr*pr);
+    d[0][0]=r;
+    d[1][1]=r;
+    d[2][2]=r*(1.0-pr)/2.0;
+    d[1][2]=pr*r;
+    d[2][1]=d[1][2];
+    d[1][3]=0.0;
+    d[3][1]=0.0;
+    d[2][3]=0.0;
+    d[3][2]=0.0;
+    
+    //单元矩阵循环的开始
+    k=0;//k为单元号
+    while(k<=ne){
+    for(i=0;i<3;i++){
+        j=nel[k][i];
+        ns[2*i-1]=j*2-1;
+        ns[2*i]=j*2;
+        x[i]=xc[j];
+        y[i]=yc[j];
+    }
+
+    void elstmx(int kk);
+
+    elstmx(k);
+
+    //单元刚度矩阵组装成总体刚度矩阵
+    for(i=0;i<6;i++){
+        ii=ns[i];
+        for(j=0;j<6;j++){
+            jj=ns[j]+1-ii;
+            if(jj<=0)continue;
+            j1=jgsm+(jj-1)*np+ii-(jj-1)*(jj-2)/2;
+            a[j1]=a[j1]+esm[i][j];
+        }
+    }
+    k++;
+    }
+
+    //调用子程序 MODIFY 输入载荷节点处的载荷值、位移边界节点处的位移值 ,对总体刚度矩阵、位移数组和节点力数组进行相应的修改
+    void modify(void);
+    modify;
+
     fclose(fpi);
     fclose(fpo);
-   return(0);
+    return(0);
 }
 
+void elstmx(int kk){
+    double c[6][3];
+    for(int i=0;i<3;i++){
+        for(int j=0;j<3;j++)b[i][j]=0.0;
+    }
+    b[0][0]=y[1]-y[2];
+    b[0][2]=y[2]-y[0];
+    b[0][4]=y[0]-y[1];
+    b[1][1]=x[2]-x[1];
+    b[1][3]=x[0]-x[2];
+    b[1][5]=x[1]-x[0];
+    b[2][0]=b[1][1];
+    b[2][1]=b[0][0];
+    b[2][2]=b[1][3];
+    b[2][3]=b[0][2];
+    b[2][4]=b[1][5];
+    b[2][5]=b[0][4];
+    ar2=x[1]*y[2]+x[2]*y[0]+x[0]*y[1]-x[1]*y[0]-x[2]*y[1]-x[0]*y[2];
+    //计算矩阵C
+    for(int i=0;i<6;i++){
+        for(int j=0;j<3;j++){
+            c[i][j]=0.0;
+            for(int k=0;k<3;k++)c[i][j]+=b[k][i]*d[k][j];
+        }
+    }
+    // 计算矩阵 ESM=[BT][D][B]=[C][B]
+    for(int i=0;i<6;i++){
+        for(int j=0;j<6;j++){
+            double sum=0.0;
+            for(int k=0;k<3;k++){
+                sum+=c[i][k]*b[k][j];
+                esm[i][j]=sum*th/(2.0*ar2);
+            }
+        }
+    }
 
+}
+
+void modify(void){
+    double bv;
+    int ib;
+    fscanf(fpi,"%lg",&ib);
+    if(ib<=0)goto a208;
+    fscanf(fpi,"lg",bv);
+    if((ib%2)==1)goto a204;
+    fprintf(fpo;"节点%d载荷为:PY=%g",ib/2,bv);
+    goto a206;
+    a204:fprintf(fpo,"节点%d载荷为:PX=%g",ib/2+1,bv);
+    a206:a[jgf+ib]+=bv;
+    goto a202;
+    a208:fscanf(fpi,"%d",&ib);
+    if(ib<=0)return(0);
+    fscanf(fpi,"%lg",bv);
+    if((ib%2)==1)goto a214;
+    fprintf(fpo,"节点%d位移约束为:V=%lg",(ib+1)/2,bv);
+    goto a209;
+    a214:fprintf(fpo,"节点%d位移约束为:U=%lg",(ib+1)/2,bv);
+    a209:k=ib-1;
+    
+    
+}
