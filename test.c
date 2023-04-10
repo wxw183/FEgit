@@ -12,8 +12,10 @@ int main(){
     fputs(s2,fp);
     fclose(fp);
 */
-    int n,i;
-    fscanf(fp,"%d%d",&n,&i);
-    printf("%d\n%d\n",n,i);
+    double n,i;
+    fgets(s1,100,fp);
+    fputs(s1,stdout);
+    fscanf(fp,"%lg%lg",&n,&i);
+    fprintf(stdout,"%f\n%f\n",n,i);
     return(0);
 }
