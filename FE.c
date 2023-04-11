@@ -11,6 +11,8 @@ double em,pr,th;//EM－杨氏模量， PR－泊松比， TH－板的厚度
 
 void modify(double *a,FILE *fpi,FILE *fpo);
 void elstmx(int kk);
+void dcmpbd(double *a);
+void slvbd(double *a);
 
 int main(){
     char title[100];//存储计算内容标题的字符数组
@@ -216,4 +218,13 @@ void modify(double *a,FILE *fpi,FILE *fpo){
     }
 
     
+}
+
+void dcmpbd(double *a){
+    
+
+}
+
+void slvbd(double *a){
+
 }
