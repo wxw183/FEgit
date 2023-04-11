@@ -1,5 +1,8 @@
 #include<stdio.h>
 #include<stdlib.h>
+
+void aa(double *a);
+
 int main(){
     FILE *fp;
     char s1[100],s2[100];
@@ -17,5 +20,13 @@ int main(){
     fputs(s1,stdout);
     fscanf(fp,"%lg%lg",&n,&i);
     fprintf(stdout,"%f\n%f\n",n,i);
+    double *nn;
+    nn=&n;
+    aa(nn);
+    printf("%f",n);
     return(0);
+}
+
+void aa(double *a){
+    *a=159;
 }

@@ -4,11 +4,14 @@
 
 double esm[6][6],x[3],y[3],d[3][3];// esm[6][6]—单元刚度矩阵， x[3],y[3]—单元节点坐标， d[3][3]—材料性质矩阵
 double b[3][6],ar2;//b[3][6]—几何矩阵， ar2—三角形面积的二倍
-double a[8500],stra[3],stre[3];// a[8500]—存储节点位移向量、节点力向量和总体刚度矩阵的数组 a，STRA(3),STRE(3)—存储单元的应变、应力*/
+double stra[3],stre[3];// a[8500]—存储节点位移向量、节点力向量和总体刚度矩阵的数组 a，STRA(3),STRE(3)—存储单元的应变、应力*/
 int np,nbw,jgf,jgsm,jend;// np—自由度总数， nbw—最大半带宽， jgf、 jgsm、 jend 为计数单元，jgf=np－节点位移向量在数组 a 中的位置 ， jgsm=jgf+np－节点力向量在数组 a 中的位置，jend=jgsm+np*nbw—刚度矩阵在数组 a 中的位置，数组 a 总长度
 int ns[6],u[6];//ns[6]—一个单元的节点自由度编号数组， u[6]—一个单元的节点自由度
 double em,pr,th;//EM－杨氏模量， PR－泊松比， TH－板的厚度
- 
+
+void modify(double *a,FILE *fpi,FILE *fpo);
+void elstmx(int kk);
+
 int main(){
     char title[100];//存储计算内容标题的字符数组
     int i,n;//N－单元编号
@@ -56,7 +59,7 @@ int main(){
 ! De 是一个单元各节编点号之差的最大值， F 是一个节点的自由度数*/
     int inbw=0;
     nbw=0;
-    int i,j,k,m,l,nb;
+    int j,k,m,l,nb;
     for(k=0;k<ne;k++){
         for(i=0;i<3;i++)ns[i]=nel[k][i];
         for(i=0;i<2;i++){
@@ -73,6 +76,7 @@ int main(){
     jgf=np;
     jgsm=jgf+np;
     jend=jgsm+np*nbw;
+    double a[jend];
     int jl=jend-jgf;
     for(i=0;i<jend;i++)a[i]=0.0;
 
@@ -90,26 +94,26 @@ int main(){
     
     //单元矩阵循环的开始
     k=0;//k为单元号
-    while(k<=ne){
+    while(k<ne){
     for(i=0;i<3;i++){
         j=nel[k][i];
-        ns[2*i-1]=j*2-1;
         ns[2*i]=j*2;
-        x[i]=xc[j];
-        y[i]=yc[j];
+        ns[2*i+1]=j*2+1;
+        x[i]=xc[j-1];
+        y[i]=yc[j-1];
     }
 
-    void elstmx(int kk);
+    
 
     elstmx(k);
 
     //单元刚度矩阵组装成总体刚度矩阵
     for(i=0;i<6;i++){
-        ii=ns[i];
+        int ii=ns[i];
         for(j=0;j<6;j++){
-            jj=ns[j]+1-ii;
-            if(jj<=0)continue;
-            j1=jgsm+(jj-1)*np+ii-(jj-1)*(jj-2)/2;
+            int jj=ns[j]-ii;
+            if(jj<0)continue;
+            int j1=jgsm+jj*np+ii-(jj+1)*jj/2;
             a[j1]=a[j1]+esm[i][j];
         }
     }
@@ -117,8 +121,12 @@ int main(){
     }
 
     //调用子程序 MODIFY 输入载荷节点处的载荷值、位移边界节点处的位移值 ,对总体刚度矩阵、位移数组和节点力数组进行相应的修改
-    void modify(void);
-    modify;
+    
+    modify(a,fpi,fpo);
+    fprintf(fpo,"计算结果为：\n");
+    fprintf(fpo,"最大半带宽为%d\n",nbw);
+    fprintf(fpo,"总数组大小为%d\n",jend);
+
 
     fclose(fpi);
     fclose(fpo);
@@ -163,26 +171,49 @@ void elstmx(int kk){
 
 }
 
-void modify(void){
+void modify(double *a,FILE *fpi,FILE *fpo){
     double bv;
     int ib;
-    fscanf(fpi,"%lg",&ib);
-    if(ib<=0)goto a208;
-    fscanf(fpi,"lg",bv);
-    if((ib%2)==1)goto a204;
-    fprintf(fpo;"节点%d载荷为:PY=%g",ib/2,bv);
-    goto a206;
-    a204:fprintf(fpo,"节点%d载荷为:PX=%g",ib/2+1,bv);
-    a206:a[jgf+ib]+=bv;
-    goto a202;
-    a208:fscanf(fpi,"%d",&ib);
-    if(ib<=0)return(0);
-    fscanf(fpi,"%lg",bv);
-    if((ib%2)==1)goto a214;
-    fprintf(fpo,"节点%d位移约束为:V=%lg",(ib+1)/2,bv);
-    goto a209;
-    a214:fprintf(fpo,"节点%d位移约束为:U=%lg",(ib+1)/2,bv);
-    a209:k=ib-1;
-    
+    fscanf(fpi,"%d",&ib);
+    for(int i=0;ib!=0;i++){
+        fscanf(fpi,"%lg",&bv);
+
+        if(ib%2)fprintf(fpo,"节点%d载荷为:PX=%f\n",(ib+1)/2,bv);
+        else fprintf(fpo,"节点%d载荷为:PY=%f\n",ib/2,bv);
+        a[jgf+ib]+=bv;
+        fscanf(fpi,"%d",&ib);
+    }
+    fscanf(fpi,"%d",&ib);
+    for(int i=0;ib!=0;i++){
+        fscanf(fpi,"%lg",&bv);
+
+        if(ib%2)fprintf(fpo,"节点%d位移约束为:U=%f\n",(ib+1)/2,bv);
+        else fprintf(fpo,"节点%d位移约束为:V=%f\n",ib/2,bv);
+        a[jgsm+ib]+=bv;
+        int j1,ii,jj;//ii,jj为总体刚度矩阵的行号列号，j1为a矩阵中iijj元素对应的位置
+        jj=i;
+        ii=i;
+        j1=jgsm+(jj-ii)*np+ii-(jj-ii+1)*(jj-ii)/2;
+        double aa=a[j1];//暂存k_ii
+        for(int j=0;j<np;j++){
+            j1=jgsm+(jj-j)*np+j-(jj-j+1)*(jj-j)/2;
+            if(jj>=j)a[j1]=0;
+        }//k矩阵第i行变为0
+        for(int j=0;j<np;j++){
+            jj=j;
+            j1=jgsm+(j-ii)*np+ii-(j-ii+1)*(j-ii)/2;
+            if(j>=ii)a[j1]=0;
+        }//k矩阵第i列变为0
+        a[j1]=aa;
+
+
+
+
+
+
+
+        fscanf(fpi,"%d",&ib);
+    }
+
     
 }
