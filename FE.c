@@ -99,23 +99,24 @@ int main(){
     while(k<ne){
     for(i=0;i<3;i++){
         j=nel[k][i];
-        ns[2*i]=j*2;
-        ns[2*i+1]=j*2+1;
-        x[i]=xc[j-1];
-        y[i]=yc[j-1];
+        ns[2*i]=(j-1)*2;
+        ns[2*i+1]=j*2-1;
+        x[i]=xc[j];
+        y[i]=yc[j];
     }
 
     
 
     elstmx(k);
-
+    
     //单元刚度矩阵组装成总体刚度矩阵
+    int ii,jj;
     for(i=0;i<6;i++){
-        int ii=ns[i];
+        ii=ns[i];
         for(j=0;j<6;j++){
-            int jj=ns[j]-ii;
-            if(jj<0)continue;
-            int j1=jgsm+jj*np+ii-(jj+1)*jj/2;
+            jj=ns[j];
+            if(jj<ii)continue;
+            int j1=jgsm+(jj-ii)*np+ii+1+(jj-ii-1)*(jj-ii)/2;
             a[j1]=a[j1]+esm[i][j];
         }
     }
@@ -221,10 +222,11 @@ void modify(double *a,FILE *fpi,FILE *fpo){
 }
 
 void dcmpbd(double *a){
+    ;
     
 
 }
 
 void slvbd(double *a){
-
+    ;
 }

@@ -148,6 +148,11 @@ X(I)=XC(J)
 ! 调用子程序 ELSTMX 计算单元刚度矩阵矩阵 ESM（ 6， 6）并输出
 !
 CALL ELSTMX(KK)
+I=1
+DO 300 I=1,6
+DO 300 J=1,6
+PRINT*, ESM(I,J)
+300 CONTINUE
 !
 ! 单元刚度矩阵组装成总体刚度矩阵
 DO 33 I=1,6
@@ -161,6 +166,10 @@ A(J1)=A(J1)+ESM(I,J)
 33 CONTINUE
 KK=KK+1
 IF(KK.LE.NE) GOTO 32
+!I=1
+!DO 300 I=1,JEND
+!PRINT*, A(I)
+!300 CONTINUE
 !调用子程序 MODIFY 输入载荷节点处的载荷值、位移边界节点处的位移值 ,对总体刚度矩阵、
 !位移数组和节点力数组进行相应的修改
 CALL MODIFY
