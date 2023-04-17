@@ -116,7 +116,7 @@ int main(){
         for(j=0;j<6;j++){
             jj=ns[j];
             if(jj<ii)continue;
-            j1=jgsm+(jj-ii)*np+ii+1+(jj-ii-1)*(jj-ii)/2;
+            j1=jgsm+(jj-ii)*np+ii+(jj-ii-1)*(jj-ii)/2;
             a[j1]+=esm[i][j];
         }
     }
@@ -190,47 +190,68 @@ void modify(double *a,FILE *fpi,FILE *fpo){
         a[jgf+ib]+=bv;
         fscanf(fpi,"%d",&ib);
     }
+
     fscanf(fpi,"%d",&ib);
     for(int i=0;ib!=0;i++){
         fscanf(fpi,"%lg",&bv);
 
         if(ib%2)fprintf(fpo,"节点%d位移约束为:U=%f\n",(ib+1)/2,bv);
         else fprintf(fpo,"节点%d位移约束为:V=%f\n",ib/2,bv);
-        a[jgsm+ib]+=bv;
+        a[ib]+=bv;
         int j1,ii,jj;//ii,jj为总体刚度矩阵的行号列号，j1为a矩阵中iijj元素对应的位置
-        jj=i;
-        ii=i;
-        j1=jgsm+(jj-ii)*np+ii-(jj-ii+1)*(jj-ii)/2;
+
+        jj=ib;
+        ii=ib;
+        j1=jgsm+(jj-ii)*np+ii-(jj-ii-1)*(jj-ii)/2;
         double aa=a[j1];//暂存k_ii
+
         for(int j=0;j<np;j++){
-            j1=jgsm+(jj-j)*np+j-(jj-j+1)*(jj-j)/2;
+            j1=jgsm+(jj-j)*np+j-(jj-j-1)*(jj-j)/2;
             if(jj>=j)a[j1]=0;
-        }//k矩阵第i行变为0
+        }//k矩阵第ib行变为0
         for(int j=0;j<np;j++){
             jj=j;
-            j1=jgsm+(j-ii)*np+ii-(j-ii+1)*(j-ii)/2;
+            j1=jgsm+(j-ii)*np+ii-(j-ii-1)*(j-ii)/2;
             if(j>=ii)a[j1]=0;
-        }//k矩阵第i列变为0
+        }//k矩阵第ib列变为0
+        j1=jgsm+ii;
         a[j1]=aa;
 
-
-
-
-
-
+        aa=a[jgf+ib];//暂存载荷第ib项
+        for(int j=0;j<np;j++){
+            j1=jgsm+(j-ii)*np+ii-(j-ii-1)*(j-ii)/2;
+            if(j>=ii)a[jgf+j]-=bv*a[j1];
+        }
+        a[jgf+ib]=aa;
 
         fscanf(fpi,"%d",&ib);
-    }
-
-    
+    } 
 }
 
 void dcmpbd(double *a){
-    ;
-    
+    int jj,ii,j1;
+    double aa;
+    j1=jgsm+(jj-ii)*np+ii-(jj-ii-1)*(jj-ii)/2;
+    for(ii=1;ii<np;ii++){
+        j1=jgsm+(jj-ii)*np+ii-(jj-ii-1)*(jj-ii)/2;
+        aa=a[j1];
+        for(jj=ii+1;jj<np;jj++){
+            j1=jgsm+(jj-ii)*np+ii-(jj-ii-1)*(jj-ii)/2;
+            a[j1]/=aa;
+        }
+        
+
+
+
+    }    
 
 }
 
 void slvbd(double *a){
-    ;
+    int jj,ii,j1;
+    double aa;
+    j1=jgsm+(jj-ii)*np+ii-(jj-ii-1)*(jj-ii)/2;
+    for(ii=1;ii<np;ii++){
+
+    }
 }
