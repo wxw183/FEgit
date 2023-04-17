@@ -36,7 +36,7 @@ int main(){
     i=nn;
 
     double xc[i],yc[i];// XC(I)－节点的 X 轴的坐标， YC(I)－节点的 Y 轴的坐标
-    int nel[ne][3];//NEL(N,I) －组成第 N 个三角形单元的第 I 节点的编号（ I=1,2,3）
+    int nel[ne][3];//NEL(N,I) －组成第 N 个三角形单元的第 I 节点的编号，从1开始而不是从0开始（ I=1,2,3）
     /*输入材料的杨氏模量 EM，波松比 PR，平板厚度 TH，节点坐标 XC(I)，YC(I)和组成单元的节点 NEL(N,I)
 组成单元的节点的编号都按逆时针顺序输入*/
     
@@ -87,12 +87,12 @@ int main(){
     d[0][0]=r;
     d[1][1]=r;
     d[2][2]=r*(1.0-pr)/2.0;
-    d[1][2]=pr*r;
-    d[2][1]=d[1][2];
-    d[1][3]=0.0;
-    d[3][1]=0.0;
-    d[2][3]=0.0;
-    d[3][2]=0.0;
+    d[0][1]=pr*r;
+    d[1][0]=d[0][1];
+    d[0][2]=0.0;
+    d[2][0]=0.0;
+    d[1][2]=0.0;
+    d[2][1]=0.0;
     
     //单元矩阵循环的开始
     k=0;//k为单元号
@@ -101,8 +101,8 @@ int main(){
         j=nel[k][i];
         ns[2*i]=(j-1)*2;
         ns[2*i+1]=j*2-1;
-        x[i]=xc[j];
-        y[i]=yc[j];
+        x[i]=xc[j-1];
+        y[i]=yc[j-1];
     }
 
     
@@ -110,14 +110,14 @@ int main(){
     elstmx(k);
     
     //单元刚度矩阵组装成总体刚度矩阵
-    int ii,jj;
+    int ii,jj,j1;
     for(i=0;i<6;i++){
         ii=ns[i];
         for(j=0;j<6;j++){
             jj=ns[j];
             if(jj<ii)continue;
-            int j1=jgsm+(jj-ii)*np+ii+1+(jj-ii-1)*(jj-ii)/2;
-            a[j1]=a[j1]+esm[i][j];
+            j1=jgsm+(jj-ii)*np+ii+1+(jj-ii-1)*(jj-ii)/2;
+            a[j1]+=esm[i][j];
         }
     }
     k++;
@@ -129,7 +129,11 @@ int main(){
     fprintf(fpo,"计算结果为：\n");
     fprintf(fpo,"最大半带宽为%d\n",nbw);
     fprintf(fpo,"总数组大小为%d\n",jend);
-
+    dcmpbd(a);
+    slvbd(a);
+    for(int i=0;i<np/2;i++){
+        printf("节点号%dX方向位移UX=%gY方向位移UY=%g",i+1,a[2*i],a[2*i+1]);
+    }
 
     fclose(fpi);
     fclose(fpo);
@@ -167,7 +171,7 @@ void elstmx(int kk){
             double sum=0.0;
             for(int k=0;k<3;k++){
                 sum+=c[i][k]*b[k][j];
-                esm[i][j]=sum*th/(2.0*ar2);
+                esm[i][j]=sum*th/(0.5*ar2);
             }
         }
     }

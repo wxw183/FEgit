@@ -148,11 +148,11 @@ X(I)=XC(J)
 ! 调用子程序 ELSTMX 计算单元刚度矩阵矩阵 ESM（ 6， 6）并输出
 !
 CALL ELSTMX(KK)
-I=1
-DO 300 I=1,6
-DO 300 J=1,6
-PRINT*, ESM(I,J)
-300 CONTINUE
+!I=1
+!DO 300 I=1,6
+!DO 300 J=1,6
+!PRINT*, ESM(I,J)
+!300 CONTINUE
 !
 ! 单元刚度矩阵组装成总体刚度矩阵
 DO 33 I=1,6
