@@ -1,32 +1,41 @@
 #include<stdio.h>
 #include<stdlib.h>
 
-void aa(double *a);
-
-int main(){
-    FILE *fp;
-    char s1[100],s2[100];
-    fp=fopen("t1.txt","r+");
-    /*fgets(s1,100,fp);
-    fgets(s2,100,fp);
-    fclose(fp);
-    fp=fopen("t2.txt","w+");
-    fputs(s1,fp);
-    fputs(s2,fp);
-    fclose(fp);
-*/
-    double n,i;
-    fgets(s1,100,fp);
-    fputs(s1,stdout);
-    fscanf(fp,"%lg%lg",&n,&i);
-    fprintf(stdout,"%f\n%f\n",n,i);
-    double *nn;
-    nn=&n;
-    aa(nn);
-    printf("%f",n);
-    return(0);
+int np=4,nbw=2,jgf=4,jgsm=8,jend=8+2*4;
+void dcmpbd(double *a){
+    int jj,ii,j1,k,m,n;
+    double aa,mk,nk,kk,bb;
+    j1=jgsm+(jj-ii)*np+ii-(jj-ii-1)*(jj-ii)/2;
+    for(k=1;k<np;k++){
+        for(m=k;m<np;m++){
+            j1=jgsm+(m-k)*np+k-(m-k-1)*(m-k)/2;
+            mk=a[j1];//提取K_km
+            j1=jgsm+k;
+            kk=a[j1];//提取K_kk
+            bb=a[jgf+m];//提取b_m
+            a[jgf+m]-=bb*mk/kk;
+            for(n=m;(n<np)&&(n<m+nbw);n++){
+                j1=jgsm+(n-k)*np+k-(n-k-1)*(n-k)/2;
+                nk=a[j1];//提取K_kn
+                
+                j1=jgsm+(n-m)*np+m-(n-m-1)*(n-m)/2;
+                a[j1]-=mk*nk/kk;
+                
+            }
+        }
+    }
 }
-
-void aa(double *a){
-    *a=159;
+void slvbd(double *a){
+    int jj,ii,j1;
+    double aa;
+    j1=jgsm+(jj-ii)*np+ii-(jj-ii-1)*(jj-ii)/2;
+    for(ii=1;ii<np;ii++){
+        ;
+    }
+}
+int main(){
+    double a[16]={0,0,0,0,1,2,3,4,2,1,4,1,5,5,2};
+    dcmpbd(a);
+    slvbd(a);
+    return(0);
 }

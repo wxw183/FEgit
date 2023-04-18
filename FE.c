@@ -132,7 +132,7 @@ int main(){
     dcmpbd(a);
     slvbd(a);
     for(int i=0;i<np/2;i++){
-        printf("节点号%dX方向位移UX=%gY方向位移UY=%g",i+1,a[2*i],a[2*i+1]);
+        fprintf(fpo,"节点号%d的X方向位移UX=%g Y方向位移UY=%g\n",i+1,a[2*i],a[2*i+1]);
     }
 
     fclose(fpi);
@@ -229,16 +229,26 @@ void modify(double *a,FILE *fpi,FILE *fpo){
 }
 
 void dcmpbd(double *a){
-    int jj,ii,j1;
-    double aa;
+    int jj,ii,j1,k,m,n;
+    double aa,mk,nk,kk,bb;
     j1=jgsm+(jj-ii)*np+ii-(jj-ii-1)*(jj-ii)/2;
-    for(ii=1;ii<np;ii++){
-        j1=jgsm+(jj-ii)*np+ii-(jj-ii-1)*(jj-ii)/2;
-        aa=a[j1];
-        for(jj=ii+1;jj<np;jj++){
-            j1=jgsm+(jj-ii)*np+ii-(jj-ii-1)*(jj-ii)/2;
-            a[j1]/=aa;
+    for(k=1;k<np;k++){
+        for(m=k;m<np;m++){
+            j1=jgsm+(m-k)*np+k-(m-k-1)*(m-k)/2;
+            mk=a[j1];//提取K_km
+            bb=a[jgf+m];//提取b_m
+            a[jgf+m]-=bb*mk/kk;
+            for(n=m;(n<np)&&(n<m+nbw);n++){
+                j1=jgsm+(n-k)*np+k-(n-k-1)*(n-k)/2;
+                nk=a[j1];//提取K_kn
+                j1=jgsm+k;
+                kk=a[j1];//提取K_kk
+                j1=jgsm+(n-m)*np+m-(n-m-1)*(n-m)/2;
+                a[j1]-=mk*nk/kk;
+                
+            }
         }
+    
         
 
 
