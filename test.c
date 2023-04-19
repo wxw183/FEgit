@@ -7,11 +7,13 @@ void dcmpbd(double *a){
     double aa,mk,nk,kk,bb;
     j1=jgsm+(jj-ii)*np+ii-(jj-ii-1)*(jj-ii)/2;
     for(k=1;k<np;k++){
+        j1=jgsm+k;
+        kk=a[j1];//提取K_kk
         for(m=k;m<np;m++){
             j1=jgsm+(m-k)*np+k-(m-k-1)*(m-k)/2;
             mk=a[j1];//提取K_km
-            j1=jgsm+k;
-            kk=a[j1];//提取K_kk
+            
+            
             bb=a[jgf+m];//提取b_m
             a[jgf+m]-=bb*mk/kk;
             for(n=m;(n<np)&&(n<m+nbw);n++){
@@ -25,17 +27,16 @@ void dcmpbd(double *a){
         }
     }
 }
-void slvbd(double *a){
+/*void slvbd(double *a){
     int jj,ii,j1;
     double aa;
     j1=jgsm+(jj-ii)*np+ii-(jj-ii-1)*(jj-ii)/2;
     for(ii=1;ii<np;ii++){
         ;
     }
-}
+}*/
 int main(){
-    double a[16]={0,0,0,0,1,2,3,4,2,1,4,1,5,5,2};
+    double a[16]={0,0,0,0,1,2,3,4,1,1,1,1,2,2,2};
     dcmpbd(a);
-    slvbd(a);
     return(0);
 }
