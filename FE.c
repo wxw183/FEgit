@@ -2,17 +2,22 @@
 #include<math.h>
 #include<stdlib.h>
 
-double esm[6][6],x[3],y[3],d[3][3];// esm[6][6]—单元刚度矩阵， x[3],y[3]—单元节点坐标， d[3][3]—材料性质矩阵
+double esm[6][6],x[3],y[3],**d;// esm[6][6]—单元刚度矩阵， x[3],y[3]—单元节点坐标， d[3][3]—材料性质矩阵
 double b[3][6],ar2;//b[3][6]—几何矩阵， ar2—三角形面积的二倍
 double stra[3],stre[3];// a[8500]—存储节点位移向量、节点力向量和总体刚度矩阵的数组 a，STRA(3),STRE(3)—存储单元的应变、应力*/
 int np,nbw,jgf,jgsm,jend;// np—自由度总数， nbw—最大半带宽， jgf、 jgsm、 jend 为计数单元，jgf=np－节点位移向量在数组 a 中的位置 ， jgsm=jgf+np－节点力向量在数组 a 中的位置，jend=jgsm+np*nbw—刚度矩阵在数组 a 中的位置，数组 a 总长度
 int ns[6],u[6];//ns[6]—一个单元的节点自由度编号数组， u[6]—一个单元的节点自由度
 double em,pr,th;//EM－杨氏模量， PR－泊松比， TH－板的厚度
+double *a;
 
 void modify(double *a,FILE *fpi,FILE *fpo);
 void elstmx(int kk);
 void dcmpbd(double *a);
 void slvbd(double *a);
+double *k_get(int ii,int jj);
+double *d_get(int ii);
+double *r_get(int ii);
+double *material_set(double em,double pr);
 
 int main(){
     char title[100];//存储计算内容标题的字符数组
@@ -78,21 +83,14 @@ int main(){
     jgf=np;
     jgsm=jgf+np;
     jend=jgsm+np*nbw;
-    double a[jend];
+    a=(double *)malloc(jend*sizeof(double));//先存位移再存力最后存刚度阵
     int jl=jend-jgf;
     for(i=0;i<jend;i++)a[i]=0.0;
 
     //生成材料特性矩阵d
-    double r=em/(1.0-pr*pr);
-    d[0][0]=r;
-    d[1][1]=r;
-    d[2][2]=r*(1.0-pr)/2.0;
-    d[0][1]=pr*r;
-    d[1][0]=d[0][1];
-    d[0][2]=0.0;
-    d[2][0]=0.0;
-    d[1][2]=0.0;
-    d[2][1]=0.0;
+
+
+    d=material_set(em,pr);
     
     //单元矩阵循环的开始
     k=0;//k为单元号
@@ -264,4 +262,36 @@ void slvbd(double *a){
     for(ii=1;ii<np;ii++){
 
     }
+}
+///刚度阵元素获取函数
+double *k_get(int ii,int jj){
+    int j1=j1=jgsm+(jj-ii)*np+ii-(jj-ii-1)*(jj-ii)/2;
+    return &a[j1];
+}
+//位移向量元素获取函数
+double *d_get(int ii){
+    return &a[ii];
+}
+//力向量元素获取函数
+double *r_get(int ii){
+    return &a[jgf+ii];
+}
+
+//材料特性矩阵生成函数
+double *material_set(double em,double pr){//em为杨氏模量，pr为泊松比
+    double **pointer;
+    d=(double **)malloc(3*sizeof(double *));
+    for(int i=0;i<3;i++)d[i]=(double *)malloc(3*sizeof(double));
+
+    double r=em/(1.0-pr*pr);
+    pointer[0][0]=r;
+    pointer[1][1]=r;
+    pointer[2][2]=r*(1.0-pr)/2.0;
+    pointer[0][1]=pr*r;
+    pointer[1][0]=d[0][1];
+    pointer[0][2]=0.0;
+    pointer[2][0]=0.0;
+    pointer[1][2]=0.0;
+    pointer[2][1]=0.0;
+    return pointer;
 }
