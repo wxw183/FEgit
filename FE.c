@@ -1,23 +1,31 @@
+/*coding=utf-8*/
 #include<stdio.h>
 #include<math.h>
 #include<stdlib.h>
+#include<string.h>
 
 double esm[6][6],x[3],y[3],**d;// esm[6][6]—单元刚度矩阵， x[3],y[3]—单元节点坐标， d[3][3]—材料性质矩阵
 double b[3][6],ar2;//b[3][6]—几何矩阵， ar2—三角形面积的二倍
 double stra[3],stre[3];// a[8500]—存储节点位移向量、节点力向量和总体刚度矩阵的数组 a，STRA(3),STRE(3)—存储单元的应变、应力*/
 int np,nbw,jgf,jgsm,jend;// np—自由度总数， nbw—最大半带宽， jgf、 jgsm、 jend 为计数单元，jgf=np－节点位移向量在数组 a 中的位置 ， jgsm=jgf+np－节点力向量在数组 a 中的位置，jend=jgsm+np*nbw—刚度矩阵在数组 a 中的位置，数组 a 总长度
-int ns[6],u[6];//ns[6]—一个单元的节点自由度编号数组， u[6]—一个单元的节点自由度
-double em,pr,th;//EM－杨氏模量， PR－泊松比， TH－板的厚度
-double *a;
+int ns[6],u[6];//ns[6]—一个单元的节点自由度编号数组，从1开始,例如第一个节点自由度编号为1，2，第4个节点自由度编号为7，8， u[6]—一个单元的节点自由度
+double em=200000000000.0,pr=0.0,th=0.001;//EM－杨氏模量， PR－泊松比， TH－板的厚度
+double *a;//存储单元刚度矩阵，由于矩阵是对称带状矩阵，因此存储方式如下：比如最大半带宽是3，5阶矩阵
+/*
+0   5   9
+5   1   6   10
+9   6   2   7   11
+    10  7   3   8
+        11  8   4
+数字为数组中括号里面的下标，从0开始*/
 
-void modify(double *a,FILE *fpi,FILE *fpo);
+void modify(double *a);
 void elstmx(int kk);
-void dcmpbd(double *a);
-void slvbd(double *a);
+void dcmpbd();
 double *k_get(int ii,int jj);
 double *d_get(int ii);
 double *r_get(int ii);
-double *material_set(double em,double pr);
+double **material_set(double em,double pr);
 
 int main(){
     char title[100];//存储计算内容标题的字符数组
@@ -26,42 +34,44 @@ int main(){
     
     int nn,ne;//NN－节点总数， NE－单元总数 ，
 
-    FILE *fpi,*fpo;//fpi指向输入文件，fpo指向输出文件
-    fpi=fopen("INPUT.DAT","r+");
+    FILE *fpi,*fpo,*fpd,*fpr;//fpi指向输入文件，fpo指向输出文件,fpd指向输入位移载荷文件，fpr指向力载荷文件
+    fpi=fopen("0.txt","r");//input.txt为comsol导出的网格文件（域内的，非边界）
     if(fpi==NULL){
         printf("无输入文件\n");
         exit(0);
     }
-    fpo=fopen("OUTPUT.DAT","w+");
-    fgets(title,100,fpi);
-    fputs(title,fpo);
-    fscanf(fpi,"%d\n%d\n",&nn,&ne);
-    fprintf(fpo,"输入数据为：\n节点数=%d\t单元数=%d\n",nn,ne);
+//跳过网格文件前4行，开始读取nodes和elements
+    fseek(fpi,206,0);
+    fscanf(fpi,"%d",&nn);
+    fseek(fpi,252,0);
+    fscanf(fpi,"%d",&ne);
+    
+    fseek(fpi,429,0);
+    fpo=fopen("output.txt","w");
     np=2*nn;
     i=nn;
-
-    double xc[i],yc[i];// XC(I)－节点的 X 轴的坐标， YC(I)－节点的 Y 轴的坐标
+    double xc[i],yc[i];// XC(I)－节点的 X 轴的坐标，YC(I)－节点的 Y 轴的坐标
     int nel[ne][3];//NEL(N,I) －组成第 N 个三角形单元的第 I 节点的编号，从1开始而不是从0开始（ I=1,2,3）
     /*输入材料的杨氏模量 EM，波松比 PR，平板厚度 TH，节点坐标 XC(I)，YC(I)和组成单元的节点 NEL(N,I)
 组成单元的节点的编号都按逆时针顺序输入*/
+    for(int k=0;k<nn;k++){
+        fscanf(fpi,"%lg%lg",&xc[k],&yc[k]);
+    }//输入节点坐标
     
-    fscanf(fpi,"%lg\n%lg\n%lg\n",&em,&pr,&th);
-    for(int k=0;k<nn;k++){
-        fscanf(fpi,"%lg",&xc[k]);
-    }
-    for(int k=0;k<nn;k++){
-        fscanf(fpi,"%lg",&yc[k]);
-    }
+    //fprintf(fpo,"输入数据为：\n节点数=%d\t单元数=%d\n",nn,ne);
 //输出材料性质和计算模型拓扑数据便于检查时对照
-    fprintf(fpo,"\n材料常数为：%g\t泊松比为：%g\t厚度为：%g\n",em,pr,th);
+    fprintf(fpo,"材料常数为：%g\t泊松比为：%g\t厚度为：%g\n",em,pr,th);
     for(int k=0;k<nn;k++){
-        fprintf(fpo,"\n节点%d坐标为:X=%fY=%f\n",k+1,xc[k],yc[k]);
+        fprintf(fpo,"节点%d坐标为:X=%f\tY=%f\n",1+k,xc[k],yc[k]);
+        fflush(fpo);
     }
+    fseek(fpi,453+52*nn,0);
     for(int k=0;k<ne;k++){
-        fscanf(fpi,"%d%d%d%d",&n,&nel[k][0],&nel[k][1],&nel[k][2]);
-        fprintf(fpo,"\n单元号码为：%d\t组成单元的节点号码为:%d\t%d\t%d\n",n,nel[k][0],nel[k][1],nel[k][2]);
-    }
-
+        fscanf(fpi,"%d%d%d",&nel[k][0],&nel[k][1],&nel[k][2]);
+        fprintf(fpo,"单元号码为：%d\t组成单元的节点号码为:%d\t%d\t%d\n",k+1,nel[k][0],nel[k][1],nel[k][2]);
+        fflush(fpo);
+    }//节点编号从1开始
+    fclose(fpi);
     /*计算最大半带宽， B=MAXe(De+1)*F
 ! De 是一个单元各节编点号之差的最大值， F 是一个节点的自由度数*/
     int inbw=0;
@@ -80,32 +90,33 @@ int main(){
 
     }
     nbw=(nbw+1)*2;
+    
+    //生成材料特性矩阵d
+    d=material_set(em,pr);
+    
     jgf=np;
     jgsm=jgf+np;
     jend=jgsm+np*nbw;
     a=(double *)malloc(jend*sizeof(double));//先存位移再存力最后存刚度阵
     int jl=jend-jgf;
     for(i=0;i<jend;i++)a[i]=0.0;
-
-    //生成材料特性矩阵d
-
-
-    d=material_set(em,pr);
     
     //单元矩阵循环的开始
-    k=0;//k为单元号
+    k=0;//k为单元号，从0开始
     while(k<ne){
     for(i=0;i<3;i++){
-        j=nel[k][i];
-        ns[2*i]=(j-1)*2;
-        ns[2*i+1]=j*2-1;
+        j=nel[k][i];//提取k单元的第i个节点的节点号
+        ns[2*i]=j*2-1;
+        ns[2*i+1]=j*2;
         x[i]=xc[j-1];
         y[i]=yc[j-1];
     }
-
+    //探针
+    printf("element%d:node%d:x=%lg,y=%lg\n",k+1,i+1,x[i],y[i]);
     
 
     elstmx(k);
+    
     
     //单元刚度矩阵组装成总体刚度矩阵
     int ii,jj,j1;
@@ -114,26 +125,29 @@ int main(){
         for(j=0;j<6;j++){
             jj=ns[j];
             if(jj<ii)continue;
-            j1=jgsm+(jj-ii)*np+ii+(jj-ii-1)*(jj-ii)/2;
-            a[j1]+=esm[i][j];
+            *k_get(ii,jj)+=esm[i][j];
         }
     }
+    //探针
+    /*for(i=0;i<jend;i++){
+        if(i%5==0)printf("\n");
+        printf("%lg\t",a[i]);
+    }*/
     k++;
-    }
+    }//单元矩阵循环结束
 
     //调用子程序 MODIFY 输入载荷节点处的载荷值、位移边界节点处的位移值 ,对总体刚度矩阵、位移数组和节点力数组进行相应的修改
     
-    modify(a,fpi,fpo);
+    modify(a);
+
     fprintf(fpo,"计算结果为：\n");
-    fprintf(fpo,"最大半带宽为%d\n",nbw);
-    fprintf(fpo,"总数组大小为%d\n",jend);
+    //fprintf(fpo,"最大半带宽为%d\n",nbw);
+    //fprintf(fpo,"总数组大小为%d\n",jend);
     dcmpbd(a);
-    slvbd(a);
-    for(int i=0;i<np/2;i++){
-        fprintf(fpo,"节点号%d的X方向位移UX=%g Y方向位移UY=%g\n",i+1,a[2*i],a[2*i+1]);
+    for(int i=1;i<=np;i+=2){
+        fprintf(fpo,"节点号%d的X方向位移UX=%g Y方向位移UY=%g\n",(i+1)/2,*r_get(i),*r_get(i+1));
     }
 
-    fclose(fpi);
     fclose(fpo);
     return(0);
 }
@@ -176,122 +190,140 @@ void elstmx(int kk){
 
 }
 
-void modify(double *a,FILE *fpi,FILE *fpo){
-    double bv;
-    int ib;
-    fscanf(fpi,"%d",&ib);
-    for(int i=0;ib!=0;i++){
-        fscanf(fpi,"%lg",&bv);
+void modify(double *a){
+    /*
+    输入文件fpd结构：
+    自由度序号，载荷\n
 
-        if(ib%2)fprintf(fpo,"节点%d载荷为:PX=%f\n",(ib+1)/2,bv);
-        else fprintf(fpo,"节点%d载荷为:PY=%f\n",ib/2,bv);
-        a[jgf+ib]+=bv;
-        fscanf(fpi,"%d",&ib);
+    例如：2，3
+    表示1号节点Y方向位移约束为3
+    输入文件fpr结构类似同上
+    */
+   FILE *fpd,*fpr;
+    double bv;//节点载荷
+    int ib;//自由度序号,从1开始
+    fpd=fopen("dc.txt","r");//dc.txt为位移约束文件
+    fpr=fopen("bl.txt","r");//bl.txt为边界载荷文件
+    
+    //将读入的位移、力载荷存入数组a中
+    
+    while(feof(fpr)==0){
+        fscanf(fpr,"%d,%lg",&ib,&bv);
+        *r_get(ib)=bv;
     }
-
-    fscanf(fpi,"%d",&ib);
-    for(int i=0;ib!=0;i++){
-        fscanf(fpi,"%lg",&bv);
-
-        if(ib%2)fprintf(fpo,"节点%d位移约束为:U=%f\n",(ib+1)/2,bv);
-        else fprintf(fpo,"节点%d位移约束为:V=%f\n",ib/2,bv);
-        a[ib]+=bv;
-        int j1,ii,jj;//ii,jj为总体刚度矩阵的行号列号，j1为a矩阵中iijj元素对应的位置
-
-        jj=ib;
-        ii=ib;
-        j1=jgsm+(jj-ii)*np+ii-(jj-ii-1)*(jj-ii)/2;
-        double aa=a[j1];//暂存k_ii
-
-        for(int j=0;j<np;j++){
-            j1=jgsm+(jj-j)*np+j-(jj-j-1)*(jj-j)/2;
-            if(jj>=j)a[j1]=0;
-        }//k矩阵第ib行变为0
-        for(int j=0;j<np;j++){
-            jj=j;
-            j1=jgsm+(j-ii)*np+ii-(j-ii-1)*(j-ii)/2;
-            if(j>=ii)a[j1]=0;
-        }//k矩阵第ib列变为0
-        j1=jgsm+ii;
-        a[j1]=aa;
-
-        aa=a[jgf+ib];//暂存载荷第ib项
-        for(int j=0;j<np;j++){
-            j1=jgsm+(j-ii)*np+ii-(j-ii-1)*(j-ii)/2;
-            if(j>=ii)a[jgf+j]-=bv*a[j1];
-        }
-        a[jgf+ib]=aa;
-
-        fscanf(fpi,"%d",&ib);
-    } 
-}
-
-void dcmpbd(double *a){
-    int jj,ii,j1,k,m,n;
-    double aa,mk,nk,kk,bb;
-    j1=jgsm+(jj-ii)*np+ii-(jj-ii-1)*(jj-ii)/2;
-    for(k=1;k<np;k++){
-        for(m=k;m<np;m++){
-            j1=jgsm+(m-k)*np+k-(m-k-1)*(m-k)/2;
-            mk=a[j1];//提取K_km
-            bb=a[jgf+m];//提取b_m
-            a[jgf+m]-=bb*mk/kk;
-            for(n=m;(n<np)&&(n<m+nbw);n++){
-                j1=jgsm+(n-k)*np+k-(n-k-1)*(n-k)/2;
-                nk=a[j1];//提取K_kn
-                j1=jgsm+k;
-                kk=a[j1];//提取K_kk
-                j1=jgsm+(n-m)*np+m-(n-m-1)*(n-m)/2;
-                a[j1]-=mk*nk/kk;
-                
+    while(feof(fpd)==0){
+        fscanf(fpd,"%d,%lg",&ib,&bv);
+        *d_get(ib)=bv;
+        //修改k矩阵和r向量
+        //k(ib,ib)所在行列除了k(ib,ib)本身全部置零
+        for(int i=1;i<=np;i++){
+            if(i!=ib){
+                *k_get(ib,i)=0;
             }
         }
-    
-        
-
-
-
-    }    
-
-}
-
-void slvbd(double *a){
-    int jj,ii,j1;
-    double aa;
-    j1=jgsm+(jj-ii)*np+ii-(jj-ii-1)*(jj-ii)/2;
-    for(ii=1;ii<np;ii++){
-
+        //修改r向量
+        for(int i=1;i<=np;i++){
+            if(i!=ib){
+                *r_get(i)-=(*k_get(ib,i))*bv;
+            }
+            else *r_get(i)=(*k_get(i,i))*bv;
+        }
     }
+    //探针
+    /*
+    FILE *fpp;//探针输出文件
+    fpp=fopen("probe.txt","w");
+    for(int i=1;i<=np;i++)fprintf(fpp,"%lg\t",*d_get(i));
+    fprintf(fpp,"\n");
+    fflush(fpp);
+    for(int i=1;i<=np;i++)fprintf(fpp,"%lg\t",*r_get(i));
+    fprintf(fpp,"\n");
+    fflush(fpp);
+    for(int i=1;i<=np;i++){
+        for(int j=1;j<=np;j++){
+            fprintf(fpp,"%lg\t",*k_get(i,j));
+        }
+        fprintf(fpp,"\n");
+        fflush(fpp);
+    }*/
 }
-///刚度阵元素获取函数
+
+void dcmpbd(){
+    int jj,ii,j1,k,m;
+    double aa,mk,nk,kk,bb;
+    for(int s=1;s<=np;s++){
+        //往下打洞
+        for(int i=s+1;i<=np&&i<=s+nbw-1;i++){
+            //r向量打洞
+            *r_get(i)-=*r_get(s)*(*k_get(s,i))/(*k_get(s,s));
+            //矩阵打洞
+            for(int j=s+1;j<=np;j++){
+                *k_get(j,i)-=*k_get(s,j)*(*k_get(s,i))/(*k_get(s,s));
+            }
+        }
+        //第一行第一个元素变成1
+        *r_get(s)/=*k_get(s,s);
+        for(int j=np;j>=s;j--){
+            *k_get(s,j)/=*k_get(s,s);
+        }
+    }
+    
+    //开始回代
+    for(int i=np-1;i>=1;i--){
+        for(int j=i+1;j<=i+nbw-1&&j<=np;j++){
+            *r_get(i)-=*k_get(j,i)*(*r_get(j));
+        }
+    }
+    FILE *fpp;//探针输出文件
+    fpp=fopen("probe1.txt","w");
+    for(int i=1;i<=np;i++)fprintf(stdout,"%lg\t",*d_get(i));
+    fprintf(stdout,"\n");
+    fflush(fpp);
+    for(int i=1;i<=np;i++)fprintf(stdout,"%lg\t",*r_get(i));
+    fprintf(stdout,"\n");
+    fflush(fpp);
+    for(int i=1;i<=np;i++){
+        for(int j=1;j<=np;j++){
+            fprintf(stdout,"%lg\t",*k_get(i,j));
+        }
+        fprintf(stdout,"\n");
+        fflush(fpp);
+    }
+    fclose(fpp);
+
+}
+
+///刚度阵元素获取函数，矩阵行列号ii和jj从1开始编
 double *k_get(int ii,int jj){
-    int j1=j1=jgsm+(jj-ii)*np+ii-(jj-ii-1)*(jj-ii)/2;
+    int j1;
+    if(ii<=jj)j1=jgsm+abs(jj-ii)*np+ii-1-(abs(jj-ii)-1)*abs(jj-ii)/2;
+    else j1=jgsm+abs(jj-ii)*np+jj-1-(abs(jj-ii)-1)*abs(jj-ii)/2;
     return &a[j1];
 }
-//位移向量元素获取函数
+//位移向量元素获取函数，例如：d_get(3)返回位移向量的第三分量（从1开始）
 double *d_get(int ii){
-    return &a[ii];
+    return &a[ii-1];
 }
-//力向量元素获取函数
+//力向量元素获取函数，例如：r_get(3)返回位移向量的第三分量（从1开始）
 double *r_get(int ii){
-    return &a[jgf+ii];
+    return &a[jgf+ii-1];
 }
 
-//材料特性矩阵生成函数
-double *material_set(double em,double pr){//em为杨氏模量，pr为泊松比
+//材料特性矩阵生成函数(平面应力问题)
+double **material_set(double em,double pr){//em为杨氏模量，pr为泊松比
     double **pointer;
-    d=(double **)malloc(3*sizeof(double *));
-    for(int i=0;i<3;i++)d[i]=(double *)malloc(3*sizeof(double));
+    pointer=(double **)malloc(3*sizeof(double *));
+    for(int i=0;i<3;i++)pointer[i]=(double *)malloc(3*sizeof(double));
 
     double r=em/(1.0-pr*pr);
     pointer[0][0]=r;
     pointer[1][1]=r;
     pointer[2][2]=r*(1.0-pr)/2.0;
     pointer[0][1]=pr*r;
-    pointer[1][0]=d[0][1];
+    pointer[1][0]=pointer[0][1];
     pointer[0][2]=0.0;
     pointer[2][0]=0.0;
     pointer[1][2]=0.0;
     pointer[2][1]=0.0;
-    return pointer;
+    return(pointer);
 }
