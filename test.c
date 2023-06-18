@@ -24,21 +24,21 @@ double *r_get(int ii){
 }
 
 void dcmpbd(){
-    int jj,ii,j1,k,m;
+    int j,i,j1,k,m;
     double aa,mk,nk,kk,bb;
     for(int s=1;s<=np;s++){
         //往下打洞
-        for(int i=s+1;i<=np&&i<=s+nbw-1;i++){
+        for(i=s+1;i<=np&&i<=s+nbw-1;i++){
             //r向量打洞
             *r_get(i)-=*r_get(s)*(*k_get(s,i))/(*k_get(s,s));
             //矩阵打洞
-            for(int j=i;j<=np&&j<=s+nbw-1;j++){
+            for(j=i;j<=np&&j<=s+nbw-1;j++){
                 *k_get(j,i)-=*k_get(s,j)*(*k_get(s,i))/(*k_get(s,s));
             }
         }
         //第一行第一个元素变成1
         *r_get(s)/=*k_get(s,s);
-        for(int j=np;j>=s;j--){
+        for((s+nbw-1)<=np?(j=s+nbw-1):(j=np);j>=s;j--){
             *k_get(s,j)/=*k_get(s,s);
         }
     }

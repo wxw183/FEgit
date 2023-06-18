@@ -47,7 +47,7 @@ int main(){
     fscanf(fpi,"%d",&ne);
     
     fseek(fpi,429,0);
-    fpo=fopen("output.txt","w");
+    fpo=fopen("output.csv","w");
     np=2*nn;
     i=nn;
     double xc[i],yc[i];// XC(I)－节点的 X 轴的坐标，YC(I)－节点的 Y 轴的坐标
@@ -60,16 +60,16 @@ int main(){
     
     //fprintf(fpo,"输入数据为：\n节点数=%d\t单元数=%d\n",nn,ne);
 //输出材料性质和计算模型拓扑数据便于检查时对照
-    fprintf(fpo,"材料常数为：%g\t泊松比为：%g\t厚度为：%g\n",em,pr,th);
+    //fprintf(fpo,"材料常数为：%g\t泊松比为：%g\t厚度为：%g\n",em,pr,th);
     for(int k=0;k<nn;k++){
-        fprintf(fpo,"节点%d坐标为:X=%f\tY=%f\n",1+k,xc[k],yc[k]);
+        //fprintf(fpo,"节点%d坐标为:X=%f\tY=%f\n",1+k,xc[k],yc[k]);
         fflush(fpo);
     }
     while(fgetc(fpi)==' ')fseek(fpi,1L,1);
     fseek(fpi,24L,1);
     for(int k=0;k<ne;k++){
         fscanf(fpi,"%d%d%d",&nel[k][0],&nel[k][1],&nel[k][2]);
-        fprintf(fpo,"单元号码为：%d\t组成单元的节点号码为:%d\t%d\t%d\n",k+1,nel[k][0],nel[k][1],nel[k][2]);
+        //fprintf(fpo,"单元号码为：%d\t组成单元的节点号码为:%d\t%d\t%d\n",k+1,nel[k][0],nel[k][1],nel[k][2]);
         fflush(fpo);
     }//节点编号从1开始
     fclose(fpi);
@@ -138,15 +138,30 @@ int main(){
     }//单元矩阵循环结束
 
     //调用子程序 MODIFY 输入载荷节点处的载荷值、位移边界节点处的位移值 ,对总体刚度矩阵、位移数组和节点力数组进行相应的修改
-    
+    /*FILE *fpp;//探针输出文件
+    fpp=fopen("probe.txt","w");
+    for(int i=1;i<=np;i++)fprintf(fpp,"%lg\t",*d_get(i));
+    fprintf(fpp,"\n");
+    fflush(fpp);
+    for(int i=1;i<=np;i++)fprintf(fpp,"%lg\t",*r_get(i));
+    fprintf(fpp,"\n");
+    fflush(fpp);
+    for(int i=1;i<=np;i++){
+        for(int j=1;j<=np;j++){
+            fprintf(fpp,"%lg\t",*k_get(i,j));
+        }
+        fprintf(fpp,"\n");
+        fflush(fpp);
+    }*/
     modify();
 
-    fprintf(fpo,"计算结果为：\n");
+    //fprintf(fpo,"计算结果为：\n");
     //fprintf(fpo,"最大半带宽为%d\n",nbw);
     //fprintf(fpo,"总数组大小为%d\n",jend);
     dcmpbd(a);
+    fprintf(fpo,"节点,X坐标,Y坐标,U位移,V位移\n");
     for(int i=1;i<=np;i+=2){
-        fprintf(fpo,"节点号%d的X方向位移UX=%g Y方向位移UY=%g\n",(i+1)/2,*r_get(i),*r_get(i+1));
+        fprintf(fpo,"%d,%lg,%lg,%lg,%lg\n",(i+1)/2,xc[(i+1)/2-1],yc[(i+1)/2-1],*r_get(i),*r_get(i+1));
     }
     fflush(fpo);
     int f=0;
@@ -205,6 +220,7 @@ void modify(){
    FILE *fpd,*fpr;
     double bv;//节点载荷
     int ib;//自由度序号,从1开始
+    int i;
     fpd=fopen("dc.txt","r");//dc.txt为位移约束文件
     fpr=fopen("bl.txt","r");//bl.txt为边界载荷文件
     
@@ -219,13 +235,14 @@ void modify(){
         *d_get(ib)=bv;
         //修改k矩阵和r向量
         //k(ib,ib)所在行列除了k(ib,ib)本身全部置零
-        for(int i=ib-nbw+1;i<=ib+nbw-1;i++){
+        for((ib-nbw+1)>1?(i=ib-nbw+1):(i=1);i<=ib+nbw-1&&i<=np;i++){
             if(i!=ib){
                 *k_get(ib,i)=0;
             }
         }
         //修改r向量
-        for(int i=ib-nbw+1;i<=ib+nbw-1;i++){
+        //(s+nbw-1)<=np?(j=s+nbw-1):(j=np);j>=s;j--
+        for((ib-nbw+1)>1?(i=ib-nbw+1):(i=1);i<=ib+nbw-1&&i<=np;i++){
             if(i!=ib){
                 *r_get(i)-=(*k_get(ib,i))*bv;
             }
@@ -233,40 +250,26 @@ void modify(){
         }
     }
     //探针
-    /*
-    FILE *fpp;//探针输出文件
-    fpp=fopen("probe.txt","w");
-    for(int i=1;i<=np;i++)fprintf(fpp,"%lg\t",*d_get(i));
-    fprintf(fpp,"\n");
-    fflush(fpp);
-    for(int i=1;i<=np;i++)fprintf(fpp,"%lg\t",*r_get(i));
-    fprintf(fpp,"\n");
-    fflush(fpp);
-    for(int i=1;i<=np;i++){
-        for(int j=1;j<=np;j++){
-            fprintf(fpp,"%lg\t",*k_get(i,j));
-        }
-        fprintf(fpp,"\n");
-        fflush(fpp);
-    }*/
+    
+    
 }
 
 void dcmpbd(){
-    int jj,ii,j1,k,m;
+    int j,i,j1,k,m;
     double aa,mk,nk,kk,bb;
     for(int s=1;s<=np;s++){
         //往下打洞
-        for(int i=s+1;i<=np&&i<=s+nbw-1;i++){
+        for(i=s+1;i<=np&&i<=s+nbw-1;i++){
             //r向量打洞
             *r_get(i)-=*r_get(s)*(*k_get(s,i))/(*k_get(s,s));
             //矩阵打洞
-            for(int j=i;j<=np&&j<=s+nbw-1;j++){
+            for(j=i;j<=np&&j<=s+nbw-1;j++){
                 *k_get(j,i)-=*k_get(s,j)*(*k_get(s,i))/(*k_get(s,s));
             }
         }
         //第一行第一个元素变成1
         *r_get(s)/=*k_get(s,s);
-        for(int j=s+nbw-1;j>=s;j--){
+        for((s+nbw-1)<=np?(j=s+nbw-1):(j=np);j>=s;j--){
             *k_get(s,j)/=*k_get(s,s);
         }
     }
