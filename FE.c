@@ -257,7 +257,7 @@ void dcmpbd(){
             //r向量打洞
             *r_get(i)-=*r_get(s)*(*k_get(s,i))/(*k_get(s,s));
             //矩阵打洞
-            for(int j=s+1;j<=np;j++){
+            for(int j=i;j<=np&&j<=s+nbw-1;j++){
                 *k_get(j,i)-=*k_get(s,j)*(*k_get(s,i))/(*k_get(s,s));
             }
         }

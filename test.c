@@ -2,11 +2,11 @@
 #include<math.h>
 #include<stdlib.h>
 #include<string.h>
-double a[16];
+double a[22];
 double esm[6][6],x[3],y[3],**d;// esm[6][6]—单元刚度矩阵， x[3],y[3]—单元节点坐标， d[3][3]—材料性质矩阵
 double b[3][6],ar2;//b[3][6]—几何矩阵， ar2—三角形面积的二倍
 double stra[3],stre[3];// a[8500]—存储节点位移向量、节点力向量和总体刚度矩阵的数组 a，STRA(3),STRE(3)—存储单元的应变、应力*/
-int np=4,nbw=2,jgf=4,jgsm=8,jend=16;
+int np=5,nbw=3,jgf=5,jgsm=10,jend=24;
 
 double *k_get(int ii,int jj){
     int j1;
@@ -32,7 +32,7 @@ void dcmpbd(){
             //r向量打洞
             *r_get(i)-=*r_get(s)*(*k_get(s,i))/(*k_get(s,s));
             //矩阵打洞
-            for(int j=s+1;j<=np;j++){
+            for(int j=i;j<=np&&j<=s+nbw-1;j++){
                 *k_get(j,i)-=*k_get(s,j)*(*k_get(s,i))/(*k_get(s,s));
             }
         }
@@ -74,18 +74,24 @@ int main(){
     a[1]=0;
     a[2]=0;
     a[3]=0;
-    a[4]=5.0;
-    a[5]=13.0;
-    a[6]=25.0;
-    a[7]=16.0;
-    a[8]=1;
-    a[9]=1;
-    a[10]=1;
-    a[11]=1;
-    a[12]=2;
-    a[13]=3;
-    a[14]=4;
-
+    a[4]=0;
+    a[5]=38;
+    a[6]=53;
+    a[7]=67;
+    a[8]=47;
+    a[9]=32;
+    a[10]=5;
+    a[11]=4;
+    a[12]=3;
+    a[13]=2;
+    a[14]=1;
+    a[15]=6;
+    a[16]=5;
+    a[17]=4;
+    a[18]=3;
+    a[19]=7;
+    a[20]=6;
+    a[21]=5;
 
     dcmpbd();
     
