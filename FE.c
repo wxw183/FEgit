@@ -19,7 +19,7 @@ double *a;//存储单元刚度矩阵，由于矩阵是对称带状矩阵，因�
         11  8   4
 数字为数组中括号里面的下标，从0开始*/
 
-void modify(double *a);
+void modify();
 void elstmx(int kk);
 void dcmpbd();
 double *k_get(int ii,int jj);
@@ -35,7 +35,7 @@ int main(){
     int nn,ne;//NN－节点总数， NE－单元总数 ，
 
     FILE *fpi,*fpo,*fpd,*fpr;//fpi指向输入文件，fpo指向输出文件,fpd指向输入位移载荷文件，fpr指向力载荷文件
-    fpi=fopen("0.txt","r");//input.txt为comsol导出的网格文件（域内的，非边界）
+    fpi=fopen("00.txt","r");//input.txt为comsol导出的网格文件（域内的，非边界）
     if(fpi==NULL){
         printf("无输入文件\n");
         exit(0);
@@ -65,7 +65,8 @@ int main(){
         fprintf(fpo,"节点%d坐标为:X=%f\tY=%f\n",1+k,xc[k],yc[k]);
         fflush(fpo);
     }
-    fseek(fpi,453+52*nn,0);
+    while(fgetc(fpi)==' ')fseek(fpi,1L,1);
+    fseek(fpi,24L,1);
     for(int k=0;k<ne;k++){
         fscanf(fpi,"%d%d%d",&nel[k][0],&nel[k][1],&nel[k][2]);
         fprintf(fpo,"单元号码为：%d\t组成单元的节点号码为:%d\t%d\t%d\n",k+1,nel[k][0],nel[k][1],nel[k][2]);
@@ -138,7 +139,7 @@ int main(){
 
     //调用子程序 MODIFY 输入载荷节点处的载荷值、位移边界节点处的位移值 ,对总体刚度矩阵、位移数组和节点力数组进行相应的修改
     
-    modify(a);
+    modify();
 
     fprintf(fpo,"计算结果为：\n");
     //fprintf(fpo,"最大半带宽为%d\n",nbw);
@@ -147,8 +148,10 @@ int main(){
     for(int i=1;i<=np;i+=2){
         fprintf(fpo,"节点号%d的X方向位移UX=%g Y方向位移UY=%g\n",(i+1)/2,*r_get(i),*r_get(i+1));
     }
-
-    fclose(fpo);
+    fflush(fpo);
+    int f=0;
+    f=fclose(fpo);
+    printf("\n\n\n\n%d",f);
     return(0);
 }
 
@@ -190,7 +193,7 @@ void elstmx(int kk){
 
 }
 
-void modify(double *a){
+void modify(){
     /*
     输入文件fpd结构：
     自由度序号，载荷\n
@@ -216,13 +219,13 @@ void modify(double *a){
         *d_get(ib)=bv;
         //修改k矩阵和r向量
         //k(ib,ib)所在行列除了k(ib,ib)本身全部置零
-        for(int i=1;i<=np;i++){
+        for(int i=ib-nbw+1;i<=ib+nbw-1;i++){
             if(i!=ib){
                 *k_get(ib,i)=0;
             }
         }
         //修改r向量
-        for(int i=1;i<=np;i++){
+        for(int i=ib-nbw+1;i<=ib+nbw-1;i++){
             if(i!=ib){
                 *r_get(i)-=(*k_get(ib,i))*bv;
             }
@@ -263,7 +266,7 @@ void dcmpbd(){
         }
         //第一行第一个元素变成1
         *r_get(s)/=*k_get(s,s);
-        for(int j=np;j>=s;j--){
+        for(int j=s+nbw-1;j>=s;j--){
             *k_get(s,j)/=*k_get(s,s);
         }
     }
@@ -275,21 +278,21 @@ void dcmpbd(){
         }
     }
     FILE *fpp;//探针输出文件
-    fpp=fopen("probe1.txt","w");
+    //fpp=fopen("probe1.txt","w");
     for(int i=1;i<=np;i++)fprintf(stdout,"%lg\t",*d_get(i));
     fprintf(stdout,"\n");
-    fflush(fpp);
+    //fflush(fpp);
     for(int i=1;i<=np;i++)fprintf(stdout,"%lg\t",*r_get(i));
     fprintf(stdout,"\n");
-    fflush(fpp);
+    //fflush(fpp);
     for(int i=1;i<=np;i++){
         for(int j=1;j<=np;j++){
-            fprintf(stdout,"%lg\t",*k_get(i,j));
+            //fprintf(stdout,"%lg\t",*k_get(i,j));
         }
         fprintf(stdout,"\n");
-        fflush(fpp);
+        //fflush(fpp);
     }
-    fclose(fpp);
+    //fclose(fpp);
 
 }
 
