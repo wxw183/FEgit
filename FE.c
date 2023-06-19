@@ -8,8 +8,9 @@ double esm[6][6],x[3],y[3],**d;// esm[6][6]—单元刚度矩阵， x[3],y[3]—
 double b[3][6],ar2;//b[3][6]—几何矩阵， ar2—三角形面积的二倍
 double stra[3],stre[3];// a[8500]—存储节点位移向量、节点力向量和总体刚度矩阵的数组 a，STRA(3),STRE(3)—存储单元的应变、应力*/
 int np,nbw,jgf,jgsm,jend;// np—自由度总数， nbw—最大半带宽， jgf、 jgsm、 jend 为计数单元，jgf=np－节点位移向量在数组 a 中的位置 ， jgsm=jgf+np－节点力向量在数组 a 中的位置，jend=jgsm+np*nbw—刚度矩阵在数组 a 中的位置，数组 a 总长度
-int ns[6],u[6];//ns[6]—一个单元的节点自由度编号数组，从1开始,例如第一个节点自由度编号为1，2，第4个节点自由度编号为7，8， u[6]—一个单元的节点自由度
-double em=200000000000.0,pr=0.3,th=1;//EM－杨氏模量， PR－泊松比， TH－板的厚度
+int ns[6];
+double u[6];//ns[6]—一个单元的节点自由度编号数组，从1开始,例如第一个节点自由度编号为1，2，第4个节点自由度编号为7，8， u[6]—一个单元的节点位移
+double em=200000000000.0,pr=0.3,th=0.001;//EM－杨氏模量， PR－泊松比， TH－板的厚度
 double *a;//存储单元刚度矩阵，由于矩阵是对称带状矩阵，因此存储方式如下：比如最大半带宽是3，5阶矩阵
 /*
 0   5   9
@@ -26,6 +27,7 @@ double *k_get(int ii,int jj);
 double *d_get(int ii);
 double *r_get(int ii);
 double **material_set(double em,double pr);
+void str();
 
 int main(){
     char title[100];//存储计算内容标题的字符数组
@@ -167,6 +169,36 @@ int main(){
     int f=0;
     f=fclose(fpo);
     printf("\n\n\n\n%d",f);
+    //开始输出应变应力
+    FILE *fpstress,*fpstrain;
+    fpstress=fopen("stress.csv","w");
+    fpstrain=fopen("strain.csv","w");
+    fclose(fpstrain);
+    fclose(fpstress);
+    k=0;//k为单元号，从0开始
+    while(k<ne){
+    for(i=0;i<3;i++){
+        j=nel[k][i];//提取k单元的第i个节点的节点号
+        ns[2*i]=j*2-1;//提取到k单元的6个自由度序号
+        ns[2*i+1]=j*2;
+        x[i]=xc[j-1];
+        y[i]=yc[j-1];
+    }
+    double q;
+    for(int i=0;i<6;i++){
+        q=*r_get(ns[i]);
+        u[i]=*r_get(ns[i]);
+    }
+    str();    
+    //单元刚度矩阵组装成总体刚度矩阵
+    //探针
+    /*for(i=0;i<jend;i++){
+        if(i%5==0)printf("\n");
+        printf("%lg\t",a[i]);
+    }*/
+    printf("%d\n",k);
+    k++;
+    }//单元矩阵循环结束
     return(0);
 }
 
@@ -201,7 +233,7 @@ void elstmx(int kk){
             double sum=0.0;
             for(int k=0;k<3;k++){
                 sum+=c[i][k]*b[k][j];
-                esm[i][j]=sum*th*(0.5*ar2);
+                esm[i][j]=sum*th/(2*ar2);
             }
         }
     }
@@ -332,4 +364,50 @@ double **material_set(double em,double pr){//em为杨氏模量，pr为泊松比
     pointer[1][2]=0.0;
     pointer[2][1]=0.0;
     return(pointer);
+}
+
+void str(){
+    int f;
+    FILE *fpstress,*fpstrain;
+    fpstress=fopen("stress.csv","a");
+    fpstrain=fopen("strain.csv","a");
+    double strain[3];
+    double stress[3];
+    for(int i=0;i<3;i++){
+        for(int j=0;j<6;j++)b[i][j]=0.0;
+    }
+    b[0][0]=y[1]-y[2];
+    b[0][2]=y[2]-y[0];
+    b[0][4]=y[0]-y[1];
+    b[1][1]=x[2]-x[1];
+    b[1][3]=x[0]-x[2];
+    b[1][5]=x[1]-x[0];
+    b[2][0]=b[1][1];
+    b[2][1]=b[0][0];
+    b[2][2]=b[1][3];
+    b[2][3]=b[0][2];
+    b[2][4]=b[1][5];
+    b[2][5]=b[0][4];
+    ar2=x[1]*y[2]+x[2]*y[0]+x[0]*y[1]-x[1]*y[0]-x[2]*y[1]-x[0]*y[2];
+    //计算应变
+    for(int i=0;i<3;i++){
+        strain[i]=0.0;
+        for(int j=0;j<6;j++){
+            strain[i]+=b[i][j]*u[j]/(ar2);
+        }
+    }
+    fprintf(fpstrain,"%lg,%lg,%lg,%lg,%lg\n",(x[0]+x[1]+x[2])/3,(y[0]+y[1]+y[2])/3,strain[0],strain[1],strain[2]);
+    fclose(fpstrain);
+
+    // 计算应力
+    for(int i=0;i<3;i++){
+        stress[i]=0.0;
+        for(int j=0;j<3;j++){
+            stress[i]+=d[i][j]*strain[j];
+        }
+    }
+    f=fprintf(fpstress,"%lg,%lg,%lg,%lg,%lg\n",(x[0]+x[1]+x[2])/3,(y[0]+y[1]+y[2])/3,stress[0],stress[1],stress[2]);
+    fclose(fpstress);
+    printf("%d\t",f);
+    if(f==-1)exit(0);
 }
