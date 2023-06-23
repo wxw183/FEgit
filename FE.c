@@ -37,7 +37,7 @@ int main(){
     int nn,ne;//NN－节点总数， NE－单元总数 ，
 
     FILE *fpi,*fpo,*fpd,*fpr;//fpi指向输入文件，fpo指向输出文件,fpd指向输入位移载荷文件，fpr指向力载荷文件
-    fpi=fopen("1.txt","r");//input.txt为comsol导出的网格文件（域内的，非边界）
+    fpi=fopen("00.txt","r");//input.txt为comsol导出的网格文件（域内的，非边界）
     if(fpi==NULL){
         printf("无输入文件\n");
         exit(0);
