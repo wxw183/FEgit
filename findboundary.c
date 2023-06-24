@@ -36,7 +36,7 @@ int main(){
     int nn,ne;//NN－节点总数， NE－单元总数 ，
 
     FILE *fpi,*fpo,*fpd,*fpr;//fpi指向输入文件，fpo指向输出文件,fpd指向输入位移载荷文件，fpr指向力载荷文件
-    fpi=fopen("00.txt","r");//input.txt为comsol导出的网格文件（域内的，非边界）
+    fpi=fopen("1.txt","r");//input.txt为comsol导出的网格文件（域内的，非边界）
     fpd=fopen("dc.txt","w");
     fpr=fopen("bl.txt","w");
     if(fpi==NULL){
@@ -61,19 +61,19 @@ int main(){
     for(int k=0;k<nn;k++){
         fscanf(fpi,"%lg%lg",&xc[k],&yc[k]);
         if(fabs(xc[k]-0.0)<=1e-5)fprintf(fpd,"%d,%lg\n",2*k+1,0);//2k+1是x方向的约束和载荷，2k+2是y方向的
-        if(fabs(yc[k]-0.0)<=1e-5)fprintf(fpd,"%d,%lg\n",2*k+2,0);
-        if(fabs(xc[k]-1.0)<=1e-5){
+        if(fabs(xc[k]-0.0)<=1e-5)fprintf(fpd,"%d,%lg\n",2*k+2,0);
+        if(fabs(xc[k]-30.0)<=1e-5){
             bn++;//计算出要施加载荷的边界的数目
         }
     }
     bn--;//角点修正
     //施加边界载荷
     for(int k=0;k<nn;k++){
-        if(fabs(xc[k]-1.0)<=1e-5&&(fabs(yc[k]-0.0)<=1e-5||fabs(yc[k]-1.0)<=1e-5)){//if条件里面要注意角点修正
-            fprintf(fpr,"%d,%lg\n",2*k+1,-100000.0/2/bn);
+        if(fabs(xc[k]-30.0)<=1e-5&&(fabs(yc[k]-0.0)<=1e-5||fabs(yc[k]-3.0)<=1e-5)){//if条件里面要注意角点修正
+            fprintf(fpr,"%d,%lg\n",2*k+2,-30.0/2/bn);
         }
-        else if(fabs(xc[k]-1.0)<=1e-5){
-            fprintf(fpr,"%d,%lg\n",2*k+1,-100000.0/bn);
+        else if(fabs(xc[k]-30.0)<=1e-5){
+            fprintf(fpr,"%d,%lg\n",2*k+2,-30.0/bn);
         }
     }
     

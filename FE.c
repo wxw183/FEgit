@@ -10,7 +10,7 @@ double stra[3],stre[3];// a[8500]—存储节点位移向量、节点力向量�
 int np,nbw,jgf,jgsm,jend;// np—自由度总数， nbw—最大半带宽， jgf、 jgsm、 jend 为计数单元，jgf=np－节点位移向量在数组 a 中的位置 ， jgsm=jgf+np－节点力向量在数组 a 中的位置，jend=jgsm+np*nbw—刚度矩阵在数组 a 中的位置，数组 a 总长度
 int ns[6];
 double u[6];//ns[6]—一个单元的节点自由度编号数组，从1开始,例如第一个节点自由度编号为1，2，第4个节点自由度编号为7，8， u[6]—一个单元的节点位移
-double em=200000000000.0,pr=0.3,th=0.001;//EM－杨氏模量， PR－泊松比， TH－板的厚度
+double em=200000000000.0,pr=0.3,th=1.0;//EM－杨氏模量， PR－泊松比， TH－板的厚度
 double *a;//存储单元刚度矩阵，由于矩阵是对称带状矩阵，因此存储方式如下：比如最大半带宽是3，5阶矩阵
 /*
 0   5   9
@@ -37,7 +37,7 @@ int main(){
     int nn,ne;//NN－节点总数， NE－单元总数 ，
 
     FILE *fpi,*fpo,*fpd,*fpr;//fpi指向输入文件，fpo指向输出文件,fpd指向输入位移载荷文件，fpr指向力载荷文件
-    fpi=fopen("00.txt","r");//input.txt为comsol导出的网格文件（域内的，非边界）
+    fpi=fopen("1.txt","r");//input.txt为comsol导出的网格文件（域内的，非边界）
     if(fpi==NULL){
         printf("无输入文件\n");
         exit(0);
