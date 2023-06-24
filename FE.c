@@ -52,8 +52,16 @@ int main(){
     fpo=fopen("output.csv","w");
     np=2*nn;
     i=nn;
-    double xc[i],yc[i];// XC(I)－节点的 X 轴的坐标，YC(I)－节点的 Y 轴的坐标
-    int nel[ne][3];//NEL(N,I) －组成第 N 个三角形单元的第 I 节点的编号，从1开始而不是从0开始（ I=1,2,3）
+    double *xc,*yc;
+    xc=(double *)malloc(i*sizeof(double));
+    yc=(double *)malloc(i*sizeof(double));
+    //double xc[i],yc[i];// XC(I)－节点的 X 轴的坐标，YC(I)－节点的 Y 轴的坐标
+    int **nel;
+    nel=(int **)malloc(3*ne*sizeof(int *));
+    for(i=0;i<3*ne;i++){
+        nel[i]=(int *)malloc(3*sizeof(int));
+    }
+    //int nel[ne][3];//NEL(N,I) －组成第 N 个三角形单元的第 I 节点的编号，从1开始而不是从0开始（ I=1,2,3）
     /*输入材料的杨氏模量 EM，波松比 PR，平板厚度 TH，节点坐标 XC(I)，YC(I)和组成单元的节点 NEL(N,I)
 组成单元的节点的编号都按逆时针顺序输入*/
     for(int k=0;k<nn;k++){
