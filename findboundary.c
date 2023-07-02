@@ -69,19 +69,20 @@ int main(){
     for(int k=0;k<nn;k++){
         fscanf(fpi,"%lg%lg",&xc[k],&yc[k]);
         if(fabs(xc[k]-0.0)<=1e-5)fprintf(fpd,"%d,%lg\n",2*k+1,0);//2k+1是x方向的约束和载荷，2k+2是y方向的
-        if(fabs(xc[k]-0.0)<=1e-5)fprintf(fpd,"%d,%lg\n",2*k+2,0);
-        if(fabs(xc[k]-30.0)<=1e-5){
+        if(fabs(yc[k]-0.0)<=1e-5)fprintf(fpd,"%d,%lg\n",2*k+1,0);
+        if(fabs(yc[k]-0.0)<=1e-5)fprintf(fpd,"%d,%lg\n",2*k+2,0);
+        if(fabs(yc[k]-5.196)<=1e-5){
             bn++;//计算出要施加载荷的边界的数目
         }
     }
     bn--;//角点修正
     //施加边界载荷
     for(int k=0;k<nn;k++){
-        if(fabs(xc[k]-30.0)<=1e-5&&(fabs(yc[k]-0.0)<=1e-5||fabs(yc[k]-3.0)<=1e-5)){//if条件里面要注意角点修正
-            fprintf(fpr,"%d,%lg\n",2*k+2,-30.0/2/bn);
+        if(fabs(yc[k]-5.196)<=1e-5&&(fabs(xc[k]-0.0)<=1e-5||fabs(xc[k]-3.2)<=1e-5)){//if条件里面要注意角点修正
+            fprintf(fpr,"%d,%lg\n",2*k+2,5000*xc[k]/2/bn);
         }
-        else if(fabs(xc[k]-30.0)<=1e-5){
-            fprintf(fpr,"%d,%lg\n",2*k+2,-30.0/bn);
+        else if(fabs(yc[k]-5.196)<=1e-5){
+            fprintf(fpr,"%d,%lg\n",2*k+2,5000*xc[k]/bn);
         }
     }
     
